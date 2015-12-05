@@ -1,41 +1,26 @@
 /**
- * Kandy.io Screensharing Demo
+ * Kandy.io Call Demo
  * View this tutorial and others at https://developer.kandy.io/tutorials
- */
-
-/**
- * Note: This demo currently only works on Chrome, and requires an
- * extension (https://chrome.google.com/webstore/detail/kandyio-screen-sharing/daohbhpgnnlgkipndobecbmahalalhcp)
- * to enable desktop capturing with Chrome.
  */
 
 // Variables for logging in.
 var projectAPIKey = "DAK8e73b6cfb27644c0b0cb92bd94083361";
-var username = "user2@tahpro.gmail.com";
+var username = "user1@tahpro.gmail.com";
 var password = "2voluptatemquosqu2";
 
-// Setup Kandy to handle calls and check for media support.
+// Setup Kandy to make and receive calls.
 kandy.setup({
-  // Designate an HTML element to be our stream container.
-  remoteVideoContainer: document.getElementById('remote-container'),
+    // Designate HTML elements to be our stream containers.
+    remoteVideoContainer: document.getElementById("remote-container"),
+    localVideoContainer: document.getElementById("local-container"),
 
-  // Register listeners to call events.
-  listeners: {
-    // Call Events
-    callinitiated: onCallInitiated,
-    callincoming: onCallIncoming,
-    callestablished: onCallEstablished,
-    callended: onCallEnded,
-    // Media Event
-    media: onMediaError,
-    // Screensharing Event
-    callscreenstopped: onStopSuccess
-  },
-
-  // Reference the default Chrome extension.
-  chromeExtensionId: {
-    chromeExtensionId: 'daohbhpgnnlgkipndobecbmahalalhcp'
-  }
+    // Register listeners to call events.
+    listeners: {
+        callinitiated: onCallInitiated,
+        callincoming: onCallIncoming,
+        callestablished: onCallEstablished,
+        callended: onCallEnded
+    }
 });
 
 // Login automatically as the application starts.
@@ -43,122 +28,153 @@ kandy.login(projectAPIKey, username, password, onLoginSuccess, onLoginFailure);
 
 // What to do on a successful login.
 function onLoginSuccess() {
-  log('Login was successful.');
+    log("Login was successful.");
 }
 
 // What to do on a failed login.
 function onLoginFailure() {
-  log('Login failed. Make sure you input the user\'s credentials!');
+    log("Login failed. Make sure you input the user's credentials!");
 }
 
 // Utility function for appending messages to the message div.
 function log(message) {
-  document.getElementById('log').innerHTML = '<div>' + message + '</div>';
+    document.getElementById("messages").innerHTML += "<div>" + message + "</div>";
 }
 
-// Executed when a call button is clicked.
-function toggleCall() {
-  // Check if we have a callId, meaning if a call is in progress.
-  if (callId) {
-    // Tell Kandy to end the call.
-    kandy.call.endCall(callId);
-    callId = null;
-  } else {
-    // Get user input and make the call.
-    var callee = document.getElementById('callee').value;
-    kandy.call.makeCall(callee, true);
-  }
+// Variable to keep track of video display status.
+var showVideo = true;
+
+// Get user input and make a call to the callee.
+function startCall() {
+    var callee = document.getElementById("callee").value;
+
+    // Tell Kandy to make a call to callee.
+    kandy.call.makeCall(callee, showVideo);
 }
 
-// Keep track of the callId.
+// Variable to keep track of the call.
 var callId;
 
-// Executed when the user makes a call.
-function onCallInitiated(call, calleeName) {
-  log('Making call to ' + calleeName);
-  // Store the callId.
-  callId = call.getId();
+// What to do when a call is initiated.
+function onCallInitiated(call, callee) {
+    log("Call initiated with " + callee + ". Ringing...");
+
+    // Store the call id, so the caller has access to it.
+    callId = call.getId();
+
+    // Handle UI changes. A call is in progress.
+    document.getElementById("make-call").disabled = true;
+    document.getElementById("end-call").disabled = false;
 }
 
-// Executed when the user is being called.
+// What to do for an incoming call.
 function onCallIncoming(call) {
-  // Store the callId.
-  callId = call.getId();
+    log("Incoming call from " + call.callerNumber);
 
-  // Automatically answer the call.
-  kandy.call.answerCall(callId, true);
+    // Store the call id, so the callee has access to it.
+    callId = call.getId();
+
+    // Handle UI changes. A call is incoming.
+    document.getElementById("accept-call").disabled = false;
+    document.getElementById("decline-call").disabled = false;
 }
 
-// Executed when a call is established.
+// Accept an incoming call.
+function acceptCall() {
+    // Tell Kandy to answer the call.
+    kandy.call.answerCall(callId, showVideo);
+    // Second parameter is false because we are only doing voice calls, no video.
+
+    log("Call answered.");
+    // Handle UI changes. Call no longer incoming.
+    document.getElementById("accept-call").disabled = true;
+    document.getElementById("decline-call").disabled = true;
+}
+
+// Reject an incoming call.
+function declineCall() {
+    // Tell Kandy to reject the call.
+    kandy.call.rejectCall(callId);
+
+    log("Call rejected.");
+    // Handle UI changes. Call no longer incoming.
+    document.getElementById("accept-call").disabled = true;
+    document.getElementById("decline-call").disabled = true;
+}
+
+// What to do when call is established.
 function onCallEstablished(call) {
-  log("Call established.");
+    log("Call established.");
 
-  // Handle UI changes. Call in progress.
-  document.getElementById("make-call").disabled = true;
-  document.getElementById("screensharing").disabled = false;
-  document.getElementById("end-call").disabled = false;
+    // Handle UI changes. Call in progress.
+    document.getElementById("make-call").disabled = true;
+    document.getElementById("mute-call").disabled = false;
+    document.getElementById("hold-call").disabled = false;
+    document.getElementById("end-call").disabled = false;
 }
 
-// Executed when a call is ended.
-function onCallEnded() {
-  log('Call ended.');
-  // Handle UI changes. No longer in a call.
-  document.getElementById('make-call').disabled = false;
-  document.getElementById('screensharing').disabled = true;
-  document.getElementById('end-call').disabled = true;
-
-  // Update screensharing status.
-  isSharing = false;
+// End a call.
+function endCall() {
+    // Tell Kandy to end the call.
+    kandy.call.endCall(callId);
 }
 
-// Called when the media event is triggered.
-function onMediaError(error) {
-  switch (error.type) {
-    case kandy.call.MediaErrors.NOT_FOUND:
-      log("No WebRTC support was found.");
-      break;
-    case kandy.call.MediaErrors.NO_SCREENSHARING_WARNING:
-      log("WebRTC supported, but no screensharing support was found.");
-      break;
-    default:
-      log('Other error or warning encountered.');
-      break;
-  }
+// Variable to keep track of mute status.
+var isMuted = false;
+
+// Mute or unmute the call, depending on current status.
+function toggleMute() {
+    if (isMuted) {
+        kandy.call.unMuteCall(callId);
+        log("Unmuting call.");
+        isMuted = false;
+    } else {
+        kandy.call.muteCall(callId);
+        log("Muting call.");
+        isMuted = true;
+    }
 }
 
-// Keep track of screensharing status.
-var isSharing = false;
+// Variable to keep track of hold status.
+var isHeld = false;
 
-// Executed when the user clicks on the 'Toggle Screensharing' button.
-function toggleScreensharing() {
-  // Check if we should start or stop sharing.
-  if (callId && isSharing) {
-    // Stop screensharing.
-    kandy.call.stopScreenSharing(callId, onStopSuccess, onStopFailure);
-  } else {
-    // Start screensharing.
-    kandy.call.startScreenSharing(callId, onStartSuccess, onStartFailure);
-  }
+// Hold or unhold the call, depending on current status.
+function toggleHold() {
+    if (isHeld) {
+        kandy.call.unHoldCall(callId);
+        log("Unholding call.");
+        isHeld = false;
+    } else {
+        kandy.call.holdCall(callId);
+        log("Holding call.");
+        isHeld = true;
+    }
 }
 
-// What to do on a successful screenshare start.
-function onStartSuccess() {
-  log('Screensharing started.');
-  isSharing = true;
+// What to do when a call is ended.
+function onCallEnded(call) {
+    log("Call ended.");
+
+    // Handle UI changes. No current call.
+    document.getElementById("make-call").disabled = false;
+    document.getElementById("mute-call").disabled = true;
+    document.getElementById("hold-call").disabled = true;
+    document.getElementById("end-call").disabled = true;
+
+    // Call no longer active, reset mute and hold statuses.
+    isMuted = false;
+    isHeld = false;
 }
 
-// What to do on a failed screenshare start.
-function onStartFailure() {
-  log('Failed to start screensharing.');
-}
-
-// What to do on a successful screenshare stop.
-function onStopSuccess() {
-  log('Screensharing stopped.');
-  isSharing = false;
-}
-
-// What to do on a failed screenshare stop.
-function onStopFailure() {
-  log('Failed to stop screensharing.');
+// Show or hide video, depending on current status.
+function toggleVideo() {
+    if (showVideo) {
+        kandy.call.stopCallVideo(callId);
+        log("Stopping send of video.");
+        showVideo = false;
+    } else {
+        kandy.call.startCallVideo(callId);
+        log("Starting send of video.");
+        showVideo = true;
+    }
 }
