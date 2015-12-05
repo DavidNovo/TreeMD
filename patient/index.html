@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html >
+  <head>
+    <meta charset="UTF-8">
+    <title>TreeMD</title>
+    
+    
+    
+    
+    
+    
+    
+    
+  </head>
+
+  <body>
+
+    <!-- User input: Text field and three buttons.-->
+<fieldset>
+  <legend>Screensharing</legend>
+  Callee:
+  <input type='text' id='callee' />
+
+  <input type='button' value='Make Call' id='make-call' onclick='toggleCall();' />
+  <input type='button' value='Toggle Screensharing' id='screensharing' onclick='toggleScreensharing();' disabled/>
+  <input type='button' value='End Call' id='end-call' onclick='toggleCall();' disabled/>
+</fieldset>
+
+<!-- Message log. -->
+<div id='log'> </div>
+
+<!-- Remote media container. -->
+<div id='remote-container'></div>
+    <script src='https://kandy-portal.s3.amazonaws.com/public/javascript/kandy/2.4.2/kandy.js'></script>
+
+        <script src="js/index.js"></script>
+
+    
+    
+    
+  </body>
+</html>
